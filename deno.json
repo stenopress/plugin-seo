@@ -1,0 +1,11 @@
+{
+  "name": "@steno/plugin-seo",
+  "version": "1.0.0",
+  "exports": "./mod.ts",
+  "imports": {
+    "steno": "jsr:@steno/steno@^0.6.0",
+    "@std/assert": "jsr:@std/assert",
+    "@std/path": "jsr:@std/path",
+    "@feed/feed": "jsr:@feed/feed"
+  }
+}
