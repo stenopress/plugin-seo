@@ -3,7 +3,7 @@
  */
 import type {StenoPlugin} from "steno";
 import {join} from "@std/path";
-import {Rss} from "@feed/feed";
+import { Rss, Atom } from "@feed/feed";
 
 export interface SeoPluginOptions {
     siteUrl: string;
@@ -31,6 +31,9 @@ export default function seoPlugin(options: SeoPluginOptions): StenoPlugin {
     const baseUrl = options.siteUrl.replace(/\/$/, "");
     const feedTitle = options.title ?? "Steno RSS Feed";
     const feedDescription = options.description ?? "Latest posts from our Steno site";
+    const atomFeedTitle = options.title ?? "Steno Atom Feed";
+    const atomFeedDescription = options.description ?? "Latest posts from our Steno site";
+
 
     return {
         name: "steno-plugin-seo",
@@ -45,6 +48,14 @@ export default function seoPlugin(options: SeoPluginOptions): StenoPlugin {
                 link: `${baseUrl}/`,
                 id: `${baseUrl}/feed.xml`,
                 authors: options.authorName ? [{name: options.authorName, email: "", link: ""}] : [],
+            });
+
+            const atomFeed = new Atom({
+                title: atomFeedTitle,
+                description: atomFeedDescription,
+                link: `${baseUrl}/`,
+                id: `${baseUrl}/atom.xml`,
+                authors: options.authorName ? [{name: options.authorName}] : [],
             });
 
             let sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n`;
@@ -79,6 +90,18 @@ export default function seoPlugin(options: SeoPluginOptions): StenoPlugin {
                             type: "text",
                         },
                     });
+
+                    atomFeed.addItem({
+                        title: page.title ?? "Untitled",
+                        link: url,
+                        id: url,
+                        updated: pageDate,
+                        summary: page.description ?? "",
+                        content: {
+                            body: page.description ?? "",
+                            type: "html",
+                        },
+                    });
                 }
             }
 
@@ -86,6 +109,7 @@ export default function seoPlugin(options: SeoPluginOptions): StenoPlugin {
 
             await Deno.writeTextFile(join(outputDir, "sitemap.xml"), sitemap);
             await Deno.writeTextFile(join(outputDir, "feed.xml"), rssFeed.build());
+            await Deno.writeTextFile(join(outputDir, "atom.xml"), atomFeed.build());
         },
     };
 }

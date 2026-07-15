@@ -23,6 +23,7 @@ Deno.test({
             siteUrl: "https://myblog.com/",
             title: "Custom Blog title",
             description: "My feed specification details",
+            authorName: "Test Author",
         });
 
         const writtenFiles: Record<string, string> = {};
@@ -55,14 +56,25 @@ Deno.test({
 
             assert(writtenFiles["dist/sitemap.xml"] !== undefined);
             assert(writtenFiles["dist/feed.xml"] !== undefined);
+            assert(writtenFiles["dist/atom.xml"] !== undefined);
 
             // Verify built structures
             assertStringIncludes(writtenFiles["dist/sitemap.xml"], "<loc>https://myblog.com/posts/hello-world</loc>");
 
-            // Look for signatures rendered explicitly via @feed/feed
+            // Look for signatures rendered explicitly via @feed/feed for RSS
             assertStringIncludes(writtenFiles["dist/feed.xml"], "<title>Custom Blog title</title>");
             assertStringIncludes(writtenFiles["dist/feed.xml"], "<link>https://myblog.com/posts/hello-world</link>");
             assertStringIncludes(writtenFiles["dist/feed.xml"], "Hello &lt;World&gt;");
+            // Corrected assertion for RSS author tag
+            assertStringIncludes(writtenFiles["dist/feed.xml"], "<author>(Test Author)</author>");
+
+            // Look for signatures rendered explicitly via @feed/feed for Atom
+            assertStringIncludes(writtenFiles["dist/atom.xml"], "<title>Custom Blog title</title>");
+            assertStringIncludes(writtenFiles["dist/atom.xml"], "<link href=\"https://myblog.com/posts/hello-world\"/>");
+            assertStringIncludes(writtenFiles["dist/atom.xml"], "<name>Test Author</name>");
+            // Corrected assertion for Atom summary tag (removed type="html")
+            assertStringIncludes(writtenFiles["dist/atom.xml"], "<summary>A post description</summary>");
+            assertStringIncludes(writtenFiles["dist/atom.xml"], "<content type=\"html\">A post description</content>");
         } finally {
             Deno.writeTextFile = originalWriteTextFile;
         }

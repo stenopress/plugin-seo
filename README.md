@@ -1,8 +1,8 @@
 # @steno/plugin-seo
 
-SEO plugin for [Steno](https://github.com/steno/steno) that automatically generates standard-compliant XML Sitemaps and RSS feeds.
+SEO plugin for [Steno](https://github.com/steno/steno) that automatically generates standard-compliant XML Sitemaps, RSS feeds, and Atom feeds.
 
-Powered by [jsr:@feed/feed](https://jsr.io/@feed/feed) for robust RSS generation.
+Powered by [jsr:@feed/feed](https://jsr.io/@feed/feed) for robust feed generation.
 
 ## Installation
 
@@ -29,13 +29,13 @@ plugins:
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
 | `siteUrl` | `string` | *Required* | The absolute production URL of your website (e.g., `https://example.com`). |
-| `title` | `string` | `Steno RSS Feed` | The title used for the RSS channel header. |
-| `description` | `string` | `Latest posts...` | The description/subtitle text for the RSS channel. |
+| `title` | `string` | `Steno RSS Feed` | The title used for the RSS and Atom feed headers. |
+| `description` | `string` | `Latest posts...` | The description/subtitle text for the RSS and Atom feeds. |
 | `authorName` | `string` | `undefined` | Optional global author name embedded into the feed metadata. |
 
 ## Usage
 
-Once installed and configured with your `siteUrl`, the plugin automatically generates and writes `sitemap.xml` and `feed.xml` directly to your configured output directory on every build:
+Once installed and configured with your `siteUrl`, the plugin automatically generates and writes `sitemap.xml`, `feed.xml`, and `atom.xml` directly to your configured output directory on every build:
 
 ```text
 dist/
@@ -43,11 +43,12 @@ dist/
 ├── posts/
 │   └── hello-world.html
 ├── sitemap.xml    <-- Generated Automatically
-└── feed.xml       <-- Generated Automatically
+├── feed.xml       <-- Generated Automatically
+└── atom.xml       <-- Generated Automatically
 
 ```
 
-Pages are automatically sorted chronologically by date in descending order. Root pages (like index or blank paths) are included in the sitemap but intelligently excluded from the RSS items array.
+Pages are automatically sorted chronologically by date in descending order. Root pages (like index or blank paths) are included in the sitemap but intelligently excluded from the RSS and Atom items array.
 
 ## How it works
 
