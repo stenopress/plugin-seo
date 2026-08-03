@@ -15,6 +15,12 @@ export interface SeoPluginOptions {
   description?: string;
   /** Optional feed author name. */
   authorName?: string;
+  /**
+   * Controls `robots.txt` generation. Set to `false` to disable generation
+   * entirely. Provide `disallow` paths to emit `Disallow` rules instead of
+   * the default `Allow: /`. Defaults to enabled with no disallow rules.
+   */
+  robots?: false | { disallow?: string[] };
 }
 
 /** Creates a Steno plugin that generates sitemap, RSS, and Atom documents. */
@@ -109,6 +115,38 @@ export default function seoPlugin(options: SeoPluginOptions): StenoPlugin {
       await Deno.writeTextFile(join(outputDir, "sitemap.xml"), sitemap);
       await Deno.writeTextFile(join(outputDir, "feed.xml"), rssFeed.build());
       await Deno.writeTextFile(join(outputDir, "atom.xml"), atomFeed.build());
+
+      if (options.robots !== false) {
+        const robotsPath = join(outputDir, "robots.txt");
+
+        let robotsExists = false;
+        try {
+          await Deno.stat(robotsPath);
+          robotsExists = true;
+        } catch (error) {
+          if (!(error instanceof Deno.errors.NotFound)) throw error;
+        }
+
+        if (robotsExists) {
+          console.warn(
+            `Steno SEO Plugin: skipping robots.txt generation because a robots.txt already exists at ${robotsPath}.`,
+          );
+        } else {
+          const disallow = options.robots?.disallow ?? [];
+
+          let robots = `User-agent: *\n`;
+          if (disallow.length === 0) {
+            robots += `Allow: /\n`;
+          } else {
+            for (const path of disallow) {
+              robots += `Disallow: ${path}\n`;
+            }
+          }
+          robots += `\nSitemap: ${baseUrl}/sitemap.xml\n`;
+
+          await Deno.writeTextFile(robotsPath, robots);
+        }
+      }
     },
   };
 }

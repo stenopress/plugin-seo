@@ -110,3 +110,178 @@ Deno.test({
     }
   },
 });
+
+Deno.test({
+  name: "seo: generates a default robots.txt allowing all crawling",
+  fn: async () => {
+    const plugin = seoPlugin({ siteUrl: "https://myblog.com/" });
+
+    const writtenFiles: Record<string, string> = {};
+    const originalWriteTextFile = Deno.writeTextFile;
+    const originalStat = Deno.stat;
+
+    Deno.writeTextFile = (
+      path: string | URL,
+      data: string | ReadableStream<string>,
+    ): Promise<void> => {
+      writtenFiles[String(path)] = typeof data === "string" ? data : "[Stream]";
+      return Promise.resolve();
+    };
+
+    Deno.stat = (): Promise<Deno.FileInfo> => {
+      return Promise.reject(new Deno.errors.NotFound());
+    };
+
+    try {
+      const mockConfig = {
+        output: "dist",
+        title: "Test Blog",
+        description: "Test description",
+        author: "Tester",
+        pages: [],
+      };
+      await plugin.afterBuild!(mockConfig);
+
+      assert(writtenFiles["dist/robots.txt"] !== undefined);
+      assertStringIncludes(writtenFiles["dist/robots.txt"], "User-agent: *");
+      assertStringIncludes(writtenFiles["dist/robots.txt"], "Allow: /");
+      assertStringIncludes(
+        writtenFiles["dist/robots.txt"],
+        "Sitemap: https://myblog.com/sitemap.xml",
+      );
+    } finally {
+      Deno.writeTextFile = originalWriteTextFile;
+      Deno.stat = originalStat;
+    }
+  },
+});
+
+Deno.test({
+  name: "seo: skips robots.txt generation when robots is set to false",
+  fn: async () => {
+    const plugin = seoPlugin({
+      siteUrl: "https://myblog.com/",
+      robots: false,
+    });
+
+    const writtenFiles: Record<string, string> = {};
+    const originalWriteTextFile = Deno.writeTextFile;
+
+    Deno.writeTextFile = (
+      path: string | URL,
+      data: string | ReadableStream<string>,
+    ): Promise<void> => {
+      writtenFiles[String(path)] = typeof data === "string" ? data : "[Stream]";
+      return Promise.resolve();
+    };
+
+    try {
+      const mockConfig = {
+        output: "dist",
+        title: "Test Blog",
+        description: "Test description",
+        author: "Tester",
+        pages: [],
+      };
+      await plugin.afterBuild!(mockConfig);
+
+      assert(writtenFiles["dist/robots.txt"] === undefined);
+    } finally {
+      Deno.writeTextFile = originalWriteTextFile;
+    }
+  },
+});
+
+Deno.test({
+  name: "seo: emits Disallow rules and omits Allow when disallow paths given",
+  fn: async () => {
+    const plugin = seoPlugin({
+      siteUrl: "https://myblog.com/",
+      robots: { disallow: ["/admin"] },
+    });
+
+    const writtenFiles: Record<string, string> = {};
+    const originalWriteTextFile = Deno.writeTextFile;
+    const originalStat = Deno.stat;
+
+    Deno.writeTextFile = (
+      path: string | URL,
+      data: string | ReadableStream<string>,
+    ): Promise<void> => {
+      writtenFiles[String(path)] = typeof data === "string" ? data : "[Stream]";
+      return Promise.resolve();
+    };
+
+    Deno.stat = (): Promise<Deno.FileInfo> => {
+      return Promise.reject(new Deno.errors.NotFound());
+    };
+
+    try {
+      const mockConfig = {
+        output: "dist",
+        title: "Test Blog",
+        description: "Test description",
+        author: "Tester",
+        pages: [],
+      };
+      await plugin.afterBuild!(mockConfig);
+
+      assertStringIncludes(writtenFiles["dist/robots.txt"], "Disallow: /admin");
+      assert(!writtenFiles["dist/robots.txt"].includes("Allow: /\n"));
+    } finally {
+      Deno.writeTextFile = originalWriteTextFile;
+      Deno.stat = originalStat;
+    }
+  },
+});
+
+Deno.test({
+  name: "seo: does not overwrite an existing robots.txt",
+  fn: async () => {
+    const plugin = seoPlugin({ siteUrl: "https://myblog.com/" });
+
+    const writtenFiles: Record<string, string> = {};
+    const originalWriteTextFile = Deno.writeTextFile;
+    const originalStat = Deno.stat;
+    const originalWarn = console.warn;
+
+    let warned = false;
+
+    Deno.writeTextFile = (
+      path: string | URL,
+      data: string | ReadableStream<string>,
+    ): Promise<void> => {
+      writtenFiles[String(path)] = typeof data === "string" ? data : "[Stream]";
+      return Promise.resolve();
+    };
+
+    Deno.stat = (path: string | URL): Promise<Deno.FileInfo> => {
+      if (String(path).endsWith("robots.txt")) {
+        return Promise.resolve({} as Deno.FileInfo);
+      }
+      return Promise.reject(new Deno.errors.NotFound());
+    };
+
+    console.warn = () => {
+      warned = true;
+    };
+
+    try {
+      const mockConfig = {
+        output: "dist",
+        title: "Test Blog",
+        description: "Test description",
+        author: "Tester",
+        pages: [],
+      };
+      await plugin.afterBuild!(mockConfig);
+
+      assert(writtenFiles["dist/robots.txt"] === undefined);
+      assert(warned, "expected a console.warn call when robots.txt exists");
+    } finally {
+      Deno.writeTextFile = originalWriteTextFile;
+      Deno.stat = originalStat;
+      console.warn = originalWarn;
+    }
+  },
+});
