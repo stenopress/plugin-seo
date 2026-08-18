@@ -1,6 +1,6 @@
 {
   "name": "@steno/plugin-seo",
-  "version": "0.7.3",
+  "version": "1.0.0",
   "exports": "./mod.ts",
   "imports": {
     "steno": "jsr:@steno/steno@^0.12.0",
